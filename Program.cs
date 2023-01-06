@@ -61,67 +61,34 @@ static class Program
             return 0;
         }
 
-        var tmp = args[1];
-        var unit = 1;
-        if (tmp.EndsWith('k'))
-        {
-            unit = 1024;
-            tmp = tmp[..^1];
-        }
-        else if (tmp.EndsWith('m'))
-        {
-            unit = 1024 * 1024;
-            tmp = tmp[..^1];
-        }
-        else if(tmp.EndsWith('g'))
-        {
-            unit = 1024 * 1024 * 1024;
-            tmp = tmp[..^1];
-        }
-
-        long offsetTry;
-        if (long.TryParse(tmp, out offsetTry))
-        {
-            offset = unit * offsetTry;
-        }
-        else if (tmp.StartsWith('x') || tmp.StartsWith('X'))
-        {
-            offset = Convert.ToInt64(tmp.Substring(1), 16);
-        }
-        else
+        if (false == TryParseInt64(args[1], out offset))
         {
             Console.Error.WriteLine(
-                $"{args[1]} is NOT a number.");
+                $"Offset {args[1]} is NOT a number.");
             return 0;
         }
 
-        tmp = lengthText;
-        unit = 1;
-        if (tmp.EndsWith('k'))
+        if (false == TryParseInt64(lengthText, out long i64length))
         {
-            unit = 1024;
-            tmp = tmp[..^1];
+            Console.Error.WriteLine(
+                $"Length {args[2]} is NOT a number.");
+            return 0;
         }
+        Console.WriteLine($"'{fileName}', offset={offset}, length={i64length}");
 
-        if (int.TryParse(tmp, out length))
+        if (i64length > 128 * 1024)
         {
-            length *= unit;
-        }
-        else if (tmp.StartsWith('x') || tmp.StartsWith('X'))
-        {
-            length = Convert.ToInt32(tmp.Substring(1), 16);
+            length = 128 * 1024;
         }
         else
         {
-            Console.Error.WriteLine(
-                $"Length {lengthText} is NOT a number, hex-digit, ends with 'k'.");
-            return 0;
+            length = (int) i64length;
         }
 
         fileSize = new FileInfo(fileName).Length;
         if (offset < 0)
         {
-            offsetTry = fileSize + offset;
+            long offsetTry = fileSize + offset;
             if (0 > offsetTry)
             {
                 Console.Error.WriteLine(
@@ -159,7 +126,7 @@ static class Program
             if (length > 100 * 1024) length = 100 * 1024;
         }
 
-        if (100 * 1024 < length)
+        if (128 * 1024 < length)
         {
             Console.Error.WriteLine(
                 $"The length as '{lengthText}', {length} is over 100k !");
@@ -172,6 +139,7 @@ static class Program
             return 0;
         }
 
+        SetupOffsetFormat(fileSize, offset + length);
 
         if (offset >= fileSize)
         {
@@ -180,12 +148,6 @@ static class Program
             return 0;
         }
         #endregion
-
-        //Console.WriteLine(
-        //    $"""
-        //    Size of file '{fileName}' is {fileSize}
-        //    and offset is {offset} with length {length}
-        //    """);
 
         PrintFilePart(fileName, offset, length);
         return 0;
@@ -205,7 +167,7 @@ static class Program
         if (cntAddSpace != 0)
         {
             wantRead = 16 - cntAddSpace;
-            //Console.WriteLine($"dbg: cntAdd={cntAddSpace}, that is, wantRead={wantRead}");
+            if (wantRead > length) wantRead = length;
             readSize = ins.Read(buffer, 0, wantRead);
             wantSize -= readSize;
             if (offset > cntAddSpace)
@@ -228,9 +190,8 @@ static class Program
             {
                 wantRead = buffer.Length;
             }
-            //Console.Write($"dbg: offset={ins.Position},");
+
             readSize = ins.Read(buffer, 0, wantRead);
-            //Console.WriteLine($"want={wantSize},real={readSize}");
             wantSize -= readSize;
             if (readSize < 1) break;
             for (int offsetThis = 0; offsetThis < readSize; offsetThis+=16)
@@ -246,7 +207,7 @@ static class Program
     {
         int lengthMore = 16;
         long indexThis2 = indexThis;
-        Console.Write($"{(indexThis + offset):x4} ");
+        Console.Write(OffsetText(indexThis + offset));
         for (int ii = 0; ii < 4; ii += 1)
         {
             for (int jj = 0; jj < 3; jj += 1)
@@ -290,62 +251,103 @@ static class Program
 
     static void PrintHexPreLine(byte[] buffer, long offset, int countOfSpace, int length)
     {
-        Console.Write($"{offset:x4} ");
-        int indexThis = 0;
-        int ndxBuf = 0;
-        for (int ii=0; ii<4; ii+=1)
-        {
-            for (int jj=0;jj<3;jj+=1)
-            {
-                if (indexThis <countOfSpace)
-                {
-                    Console.Write("   ");
-                }
-                else
-                {
-                    Console.Write($"{buffer[ndxBuf]:x2}.");
-                    ndxBuf += 1;
-                }
-                indexThis += 1;
-            }
+        Console.Write(OffsetText(offset));
+        int ii = 0;
 
-            if (indexThis < countOfSpace)
-            {
-                Console.Write("   ");
-            }
-            else
-            {
-                Console.Write($"{buffer[ndxBuf]:x2} ");
-            }
-            indexThis += 1;
+        for (ii = 0; ii < countOfSpace; ii+= 1)
+        {
+            Console.Write("   ");
         }
 
-        indexThis = 0;
-        ndxBuf = 0;
-        for (int ii = 0; ii < 4; ii += 1)
+        for (ii = 0; ii < length; ii += 1)
+        {
+            Console.Write($"{buffer[ii]:x2}");
+            if (0 == ((countOfSpace + ii) % 4)) Console.Write(' ');
+            else Console.Write('.');
+        }
+
+        for (ii = countOfSpace + length; ii < 16; ii += 1)
+        {
+            Console.Write("   ");
+        }
+
+        for (ii = 0; ii < countOfSpace; ii += 1)
         {
             Console.Write(' ');
-            for (int jj = 0; jj < 4; jj += 1)
-            {
-                if (indexThis < countOfSpace)
-                {
-                    Console.Write(' ');
-                }
-                else
-                {
-                    if (31 < buffer[ndxBuf] && buffer[ndxBuf] < 128)
-                    {
-                        Console.Write((char)buffer[ndxBuf]);
-                    }
-                    else
-                    {
-                        Console.Write('.');
-                    }
-                    ndxBuf += 1;
-                }
-                indexThis += 1;
-            }
+            if (0 == (ii % 4)) Console.Write(' ');
+        }
+
+        for (ii = 0; ii < length; ii += 1)
+        {
+            var byThe = buffer[ii];
+            if (31 < byThe && byThe < 128) Console.Write((char)byThe);
+            else Console.Write('.');
+            if (0 == ((countOfSpace + ii) % 4)) Console.Write(' ');
         }
         Console.WriteLine();
+    }
+
+    static Func<long, string> OffsetText
+    { get; set;} = (it) => $"{it:x4} ";
+
+    static void SetupOffsetFormat(long max1, long max2)
+    {
+        long maxThe = max1;
+        if (maxThe > max2) maxThe = max2;
+        var tmp2 = $"{maxThe:x4}";
+        if (5 > tmp2.Length) return;
+        var fmtThe = $"{{0:x{tmp2.Length}}} ";
+        OffsetText = (it) => string.Format(fmtThe, it);
+    }
+
+    static bool TryParseInt64(string text, out Int64 value)
+    {
+        var unit = 1;
+        if (text.EndsWith('k'))
+        {
+            unit = 1024;
+            text = text[..^1];
+        }
+        else if (text.EndsWith('m'))
+        {
+            unit = 1024 * 1024;
+            text = text[..^1];
+        }
+        else if(text.EndsWith('g'))
+        {
+            unit = 1024 * 1024 * 1024;
+            text = text[..^1];
+        }
+
+        if (long.TryParse(text, out long offsetTry))
+        {
+            value = unit * offsetTry;
+            return true;
+        }
+
+        if (text.Length > 1 &&
+        (text.StartsWith("x") || text.StartsWith("X")))
+        {
+            var text1 = text.Substring(1);
+            long value1 = 0;
+            var try1 = Int64.TryParse(text1, 
+            System.Globalization.NumberStyles.HexNumber,
+            System.Globalization.CultureInfo.InvariantCulture, out value1);
+            value = value1;
+            return try1;
+        }
+        else if (text.Length > 2 &&
+        (text.StartsWith("0x") || text.StartsWith("0X")))
+        {
+            var text2 = text.Substring(2);
+            long value2 = 0;
+            var try2 = Int64.TryParse(text2,
+            System.Globalization.NumberStyles.HexNumber,
+            System.Globalization.CultureInfo.InvariantCulture, out value2);
+            value = value2;
+            return try2;
+        }
+        value = 0;
+        return false;
     }
 }
