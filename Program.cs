@@ -1,6 +1,4 @@
-﻿using System.Drawing;
-
-namespace typehex;
+﻿namespace typehex;
 static class Program
 {
     static int Main(string[] args)
@@ -28,6 +26,12 @@ static class Program
             return 0;
         }
 
+        var fileName = args[0];
+        long fileSize;
+        long offset;
+        int length;
+
+        #region Parsing Offset and Length
         string lengthText;
         if (args.Length == 2)
         {
@@ -42,11 +46,6 @@ static class Program
             Console.WriteLine(Syntax);
             return 0;
         }
-
-        var fileName = args[0];
-        long offset;
-        long offsetTry;
-        int length;
 
         if (false == File.Exists(fileName))
         {
@@ -73,6 +72,7 @@ static class Program
             tmp = tmp[..^1];
         }
 
+        long offsetTry;
         if (long.TryParse(tmp, out offsetTry))
         {
             offset = unit * offsetTry;
@@ -111,7 +111,7 @@ static class Program
             return 0;
         }
 
-        var fileSize = new FileInfo(fileName).Length;
+        fileSize = new FileInfo(fileName).Length;
         if (offset < 0)
         {
             offsetTry = fileSize + offset;
@@ -172,12 +172,173 @@ static class Program
                 $"Offset '{args[1]}' as {offset} is over file size {fileSize} !");
             return 0;
         }
+        #endregion
 
-        Console.WriteLine(
-            $"""
-            Size of file '{fileName}' is {fileSize}
-            and offset is {offset} with length {length}
-            """);
+        //Console.WriteLine(
+        //    $"""
+        //    Size of file '{fileName}' is {fileSize}
+        //    and offset is {offset} with length {length}
+        //    """);
+
+        PrintFilePart(fileName, offset, length);
         return 0;
+    }
+
+    static void PrintFilePart(string path, long offset, int length)
+    {
+        var buffer = new byte[128];
+        int wantSize = length;
+        int readSize = 0;
+        int wantRead = 0;
+
+        using var ins = File.OpenRead(path);
+
+        ins.Seek(offset, SeekOrigin.Begin);
+        int cntAddSpace = (int) (offset % 16);
+        if (cntAddSpace != 0)
+        {
+            wantRead = 16 - cntAddSpace;
+            //Console.WriteLine($"dbg: cntAdd={cntAddSpace}, that is, wantRead={wantRead}");
+            readSize = ins.Read(buffer, 0, wantRead);
+            wantSize -= readSize;
+            if (offset > cntAddSpace)
+            {
+                offset -= cntAddSpace;
+            }
+            else
+            {
+                offset = 0;
+            }
+            PrintHexPreLine(buffer, offset, cntAddSpace, readSize);
+            offset += 16;
+        }
+
+        while (true)
+        {
+            if (1 > wantSize) break;
+            wantRead = wantSize;
+            if (wantRead > buffer.Length)
+            {
+                wantRead = buffer.Length;
+            }
+            //Console.Write($"dbg: offset={ins.Position},");
+            readSize = ins.Read(buffer, 0, wantRead);
+            //Console.WriteLine($"want={wantSize},real={readSize}");
+            wantSize -= readSize;
+            if (readSize < 1) break;
+            for (int offsetThis = 0; offsetThis < readSize; offsetThis+=16)
+            {
+                if (readSize <= offsetThis) break;
+                PrintHexLine(buffer, offset, offsetThis, readSize);
+            }
+            offset += readSize;
+        }
+    }
+
+    static void PrintHexLine(byte[] buffer, long offset, long indexThis, int length)
+    {
+        int lengthMore = 16;
+        long indexThis2 = indexThis;
+        Console.Write($"{(indexThis + offset):x4} ");
+        for (int ii = 0; ii < 4; ii += 1)
+        {
+            for (int jj = 0; jj < 3; jj += 1)
+            {
+                if (indexThis2 >= length) break;
+                Console.Write($"{buffer[indexThis2]:x2}.");
+                indexThis2 += 1;
+                lengthMore -= 1;
+            }
+            if (indexThis2 >= length) break;
+            Console.Write($"{buffer[indexThis2]:x2} ");
+            indexThis2 += 1;
+            lengthMore -= 1;
+        }
+
+        if (lengthMore < 16)
+        {
+            for (; lengthMore > 0; lengthMore -= 1)
+            {
+                Console.Write("   ");
+            }
+        }
+
+        indexThis2 = indexThis;
+        byte byteThe;
+        char charThe;
+        for (int ii = 0; ii < 4; ii += 1)
+        {
+            Console.Write($" ");
+            for (int jj = 0; jj < 4; jj += 1)
+            {
+                if (indexThis2 >= length) break;
+                byteThe = buffer[indexThis2];
+                charThe = (31 < byteThe && 128 > byteThe) ? (char)byteThe : '.';
+                Console.Write(charThe);
+                indexThis2 += 1;
+            }
+        }
+        Console.WriteLine();
+    }
+
+    static void PrintHexPreLine(byte[] buffer, long offset, int countOfSpace, int length)
+    {
+        Console.Write($"{offset:x4} ");
+        int indexThis = 0;
+        int ndxBuf = 0;
+        for (int ii=0; ii<4; ii+=1)
+        {
+            for (int jj=0;jj<3;jj+=1)
+            {
+                if (indexThis <countOfSpace)
+                {
+                    Console.Write("   ");
+                }
+                else
+                {
+                    Console.Write($"{buffer[ndxBuf]:x2}.");
+                    ndxBuf += 1;
+                }
+                indexThis += 1;
+            }
+
+            if (indexThis < countOfSpace)
+            {
+                Console.Write("   ");
+            }
+            else
+            {
+                Console.Write($"{buffer[ndxBuf]:x2} ");
+            }
+            indexThis += 1;
+        }
+
+        indexThis = 0;
+        ndxBuf = 0;
+        for (int ii = 0; ii < 4; ii += 1)
+        {
+            Console.Write(' ');
+            for (int jj = 0; jj < 4; jj += 1)
+            {
+                if (indexThis < countOfSpace)
+                {
+                    Console.Write(' ');
+                }
+                else
+                {
+                    if (31 < buffer[ndxBuf] && buffer[ndxBuf] < 128)
+                    {
+                        Console.Write((char)buffer[ndxBuf]);
+                    }
+                    else
+                    {
+                        Console.Write('.');
+                    }
+                    ndxBuf += 1;
+                }
+                indexThis += 1;
+            }
+        }
+        Console.WriteLine();
     }
 }
