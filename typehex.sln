@@ -1,0 +1,21 @@
+﻿Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{040a6b7a-1c77-49ca-9a0a-d90bfddcd62b}") = "typehex", "typehex.csproj", "{b24a9d71-7475-463a-8ef7-7cb2cadce96c}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{b24a9d71-7475-463a-8ef7-7cb2cadce96c}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{b24a9d71-7475-463a-8ef7-7cb2cadce96c}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{b24a9d71-7475-463a-8ef7-7cb2cadce96c}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{b24a9d71-7475-463a-8ef7-7cb2cadce96c}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
