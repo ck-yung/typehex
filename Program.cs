@@ -74,7 +74,7 @@ static class Program
                 $"Length {args[2]} is NOT a number.");
             return 0;
         }
-        Console.WriteLine($"'{fileName}', offset={offset}, length={i64length}");
+        //Console.WriteLine($"'{fileName}', offset={offset}, length={i64length}");
 
         if (i64length > 128 * 1024)
         {
