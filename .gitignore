@@ -2,6 +2,7 @@
 # This .gitignore file was automatically created by Microsoft(R) Visual Studio.
 ################################################################################
 .vs
+.vscode
 *.dll
 *.pdb
 *.suo
@@ -16,6 +17,7 @@ ipch
 [bB]in*
 **/[oO]bj*
 **/[bB]in*
+**/.vscode
 [dD]ebug
 [rR]elease
 **/[dD]ebug

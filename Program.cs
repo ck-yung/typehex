@@ -16,6 +16,7 @@ static class Program
 
     static readonly string Syntax =
         "Syntax: typehex FILE NUMBER-OFFSET [NUMBER-SIZE]";
+
     static int RunMain(string[] args)
     {
         if (args.Contains("-?") ||
@@ -24,6 +25,12 @@ static class Program
         {
             Console.WriteLine(Syntax);
             return 0;
+        }
+
+        if (args.Length < 2)
+        {
+            Console.WriteLine(Syntax);
+            return 0;            
         }
 
         var fileName = args[0];
