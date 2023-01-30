@@ -262,7 +262,7 @@ static class Program
         for (ii = 0; ii < length; ii += 1)
         {
             Console.Write($"{buffer[ii]:x2}");
-            if (0 == ((countOfSpace + ii) % 4)) Console.Write(' ');
+            if (3 == ((countOfSpace + ii) % 4)) Console.Write(' ');
             else Console.Write('.');
         }
 
@@ -282,7 +282,7 @@ static class Program
             var byThe = buffer[ii];
             if (31 < byThe && byThe < 128) Console.Write((char)byThe);
             else Console.Write('.');
-            if (0 == ((countOfSpace + ii) % 4)) Console.Write(' ');
+            if (3 == ((countOfSpace + ii) % 4)) Console.Write(' ');
         }
         Console.WriteLine();
     }
