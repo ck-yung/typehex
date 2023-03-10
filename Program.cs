@@ -14,9 +14,11 @@ static class Program
         return 0;
     }
 
-    static readonly string Syntax = """
+    static readonly string LengthText = "--length";
+
+    static readonly string Syntax = $"""
         Syntax: typehex FILE NUMBER-OFFSET [NUMBER-LENGTH]
-        Syntax: typehex FILE len [NUMBER-LENGTH] NUMBER-OFFSET
+        Syntax: typehex FILE {LengthText} [NUMBER-LENGTH] NUMBER-OFFSET
         """;
 
     static int RunMain(string[] args)
@@ -36,7 +38,6 @@ static class Program
         }
 
         #region Parsing Offset and Length
-        const string LengthText = "len";
         string lengthText = string.Empty;
         if (args.Contains(LengthText))
         {
