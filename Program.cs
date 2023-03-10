@@ -14,8 +14,10 @@ static class Program
         return 0;
     }
 
-    static readonly string Syntax =
-        "Syntax: typehex FILE NUMBER-OFFSET [NUMBER-SIZE]";
+    static readonly string Syntax = """
+        Syntax: typehex FILE NUMBER-OFFSET [NUMBER-LENGTH]
+        Syntax: typehex FILE len [NUMBER-LENGTH] NUMBER-OFFSET
+        """;
 
     static int RunMain(string[] args)
     {
@@ -33,16 +35,31 @@ static class Program
             return 0;            
         }
 
-        var fileName = args[0];
-        long fileSize;
-        long offset;
-        int length;
-
         #region Parsing Offset and Length
-        string lengthText;
-        if (args.Length == 2)
+        const string LengthText = "len";
+        string lengthText = string.Empty;
+        if (args.Contains(LengthText))
         {
-            lengthText = "512";
+            var aa = new List<string>();
+            int ii = 0;
+            while (ii < args.Length)
+            {
+                if (args[ii]==LengthText)
+                {
+                    lengthText = args[ii+1];
+                    ii += 1;
+                }
+                else
+                {
+                    aa.Add(args[ii]);
+                }
+                ii += 1;
+            }
+            args = aa.ToArray();
+        }
+        else if (args.Length == 2)
+        {
+            lengthText = "128";
         }
         else if (args.Length == 3)
         {
@@ -54,6 +71,12 @@ static class Program
             return 0;
         }
 
+        var fileName = args[0];
+        var offsetText = args[1];
+        long fileSize;
+        long offset;
+        int length;
+
         if (false == File.Exists(fileName))
         {
             Console.Error.WriteLine(
@@ -61,22 +84,22 @@ static class Program
             return 0;
         }
 
-        if (false == TryParseInt64(args[1], out offset))
+        if (false == TryParseInt64(offsetText, out offset))
         {
             Console.Error.WriteLine(
-                $"Offset {args[1]} is NOT a number.");
+                $"Offset {offsetText} is NOT a number.");
             return 0;
         }
 
         if (false == TryParseInt64(lengthText, out long i64length))
         {
             Console.Error.WriteLine(
-                $"Length {args[2]} is NOT a number.");
+                $"Length {lengthText} is NOT a number.");
             return 0;
         }
         //Console.WriteLine($"'{fileName}', offset={offset}, length={i64length}");
 
-        if (i64length > 128 * 1024)
+        if (i64length > 128 * 1024) // MAX LENGTH 128
         {
             length = 128 * 1024;
         }
